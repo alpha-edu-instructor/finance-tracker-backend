@@ -1,12 +1,31 @@
+import { Op } from "sequelize";
 import Transaction from "../models/Transaction.js";
 
 class TransactionController {
   async getAll(req, res) {
     try {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+
       const transactions = await Transaction.findAll({
-        where: { user_id: req.userId },
+        where: {
+          user_id: req.userId,
+          date: {
+            [Op.between]: [startOfMonth, endOfMonth]
+          }
+        },
         order: [["date", "DESC"]]
       });
+
       res.json(transactions);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -18,7 +37,7 @@ class TransactionController {
       const { type, title, amount, date } = req.body;
 
       const newTransaction = await Transaction.create({
-        user_id: req.user.id,
+        user_id: req.userId,
         type,
         title,
         amount,
